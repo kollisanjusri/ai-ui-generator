@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { generateUI, generateCodeString } from "@/agents/generator";
+import { generateUI } from "@/agents/generator";
 import {
   addVersion,
   getVersions,
@@ -13,7 +13,6 @@ import { UIPlan } from "@/types/plan";
 export default function Home() {
   const [input, setInput] = useState("");
   const [plan, setPlan] = useState<UIPlan | null>(null);
-  const [code, setCode] = useState("");
   const [explanation, setExplanation] = useState("");
   const [versionCount, setVersionCount] = useState(0);
 
@@ -39,9 +38,6 @@ export default function Home() {
 
     setPlan(data.plan);
     setExplanation(data.explanation);
-
-    // ✅ FIXED: pass components only
-    setCode(generateCodeString(data.plan.components));
   }
 
   function handleRollback(index: number) {
@@ -49,7 +45,6 @@ export default function Home() {
 
     if (previous) {
       setPlan(previous);
-      setCode(generateCodeString(previous.components));
     }
   }
 
@@ -101,21 +96,9 @@ export default function Home() {
           </div>
         )}
 
-        {code && (
-          <div>
-            <h2 className="font-semibold mb-2">Generated Code</h2>
-            <textarea
-              className="w-full h-64 border p-3 rounded font-mono text-sm"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </div>
-        )}
-
         <div>
           <h2 className="font-semibold mb-2">Live Preview</h2>
 
-          {/* ✅ FIXED: pass components only */}
           {plan && generateUI(plan.components)}
         </div>
       </div>
