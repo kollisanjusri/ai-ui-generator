@@ -37,7 +37,15 @@ function renderComponent(node: ComponentNode): React.ReactNode {
       return <Table {...props} />;
 
     case "Modal":
-      return <Modal {...props}>{renderedChildren}</Modal>;
+      return (
+        <Modal
+          isOpen={props.isOpen ?? true}
+          onClose={props.onClose ?? (() => {})}
+          {...props}
+        >
+          {renderedChildren}
+        </Modal>
+      );
 
     case "Sidebar":
       return <Sidebar {...props} />;
