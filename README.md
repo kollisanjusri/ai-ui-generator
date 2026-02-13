@@ -1,36 +1,205 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI UI Generator — Deterministic Claude-Style Agent
 
-## Getting Started
+This project is an AI-powered UI generator that converts natural language into working React UI using a fixed and deterministic component system.
 
-First, run the development server:
+It was built as part of the Ryze AI Full-Stack Assignment.
 
-```bash
+The focus of this project is correctness, determinism, and system design — not visual creativity.
+
+---
+
+## 🎯 What This Project Does
+
+The system follows a structured pipeline:
+
+Natural Language → Structured Plan → Generated React Code → Live Preview
+
+A user can:
+- Describe a UI in plain English
+- See the UI rendered instantly
+- Modify it iteratively
+- Understand why the AI made certain decisions
+- Roll back to previous versions
+
+The system is designed to be safe, reproducible, and debuggable.
+
+---
+
+## 🧠 Agent Architecture
+
+This system uses a multi-step agent design (not a single LLM call).
+
+### 1️⃣ Planner Agent
+The Planner:
+- Interprets user intent
+- Selects components from a fixed library
+- Defines layout structure
+- Outputs strict JSON
+- Supports incremental edits
+- Blocks styling-related changes
+
+### 2️⃣ Generator
+The Generator:
+- Converts the structured plan into React components
+- Uses only the predefined component library
+- Renders live preview
+- Converts the plan into readable React code
+
+### 3️⃣ Explainer Agent
+The Explainer:
+- Describes why certain layout decisions were made
+- Explains component selection
+- Clarifies what changed during updates
+
+This improves transparency and trust.
+
+---
+
+## 🔒 Deterministic Component System
+
+All UI must use predefined components:
+
+- Button  
+- Card  
+- Input  
+- Table  
+- Modal  
+- Sidebar  
+- Navbar  
+- Chart  
+
+The AI is NOT allowed to:
+- Create new components
+- Modify component styling
+- Generate inline styles
+- Generate arbitrary Tailwind classes
+- Use external UI libraries
+
+The AI may only:
+- Select components
+- Compose layouts
+- Set predefined props
+- Provide content
+
+This guarantees visual consistency and reproducibility.
+
+---
+
+## 🔁 Iteration & Versioning
+
+The system supports incremental updates.
+
+When a user modifies the UI:
+- The previous plan is passed back to the Planner
+- Only necessary changes are made
+- Existing components are preserved
+- Full rewrites are avoided unless explicitly requested
+
+Version history is stored in memory and users can:
+- View total versions
+- Roll back to previous states
+
+---
+
+## 🛡 Safety & Validation
+
+The system includes real safeguards:
+
+- Component whitelist enforcement
+- Prop validation
+- Table schema enforcement
+- JSON structure validation
+- Defensive rendering
+- Server-side LLM execution
+- API key isolation
+
+Invalid AI outputs will not crash the application.
+
+---
+
+## 🖥 UI Structure
+
+Left Panel:
+- Chat input
+- Generate button
+- Version history
+- Rollback controls
+
+Right Panel:
+- AI explanation
+- Generated React code (editable)
+- Live preview
+
+This creates a Claude-style feedback loop between intent, code, and UI.
+
+---
+
+## 🧰 Tech Stack
+
+Frontend:
+- Next.js (App Router)
+- React
+- TypeScript
+
+Backend:
+- Next.js API Routes
+
+AI:
+- Groq LLM (OpenAI-compatible API)
+
+Storage:
+- In-memory version store
+
+---
+
+## 🚀 Setup Instructions
+
+1. Clone the repository  
+2. Install dependencies:
+
+npm install
+
+3. Create a `.env.local` file:
+
+OPENAI_API_KEY=your_groq_api_key  
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+
+4. Start the development server:
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ⚠ Known Limitations
 
-To learn more about Next.js, take a look at the following resources:
+- Edited code does not re-parse into the structured plan
+- Version history is not persistent (in-memory only)
+- Merge logic is prompt-based, not AST-based
+- No streaming responses
+- No diff visualization
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔮 What I Would Improve With More Time
 
-## Deploy on Vercel
+- AST-based merge engine
+- Schema-driven validation
+- True diff view between versions
+- Streaming AI responses
+- Persistent storage
+- Replayable generation timeline
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🧠 What This Project Demonstrates
+
+- Multi-agent orchestration
+- Deterministic UI generation
+- Incremental AI reasoning
+- Safe LLM integration
+- Strong system design thinking
+- Trustworthy AI architecture
