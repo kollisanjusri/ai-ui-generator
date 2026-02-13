@@ -54,7 +54,17 @@ function renderComponent(node: ComponentNode): React.ReactNode {
       return <Navbar {...props} />;
 
     case "Chart":
-      return <Chart {...props} />;
+      return (
+        <Chart
+          data={
+            props.data ?? [
+              { label: "Jan", value: 40 },
+              { label: "Feb", value: 60 },
+            ]
+          }
+          {...props}
+        />
+      );
 
     default:
       return null;
