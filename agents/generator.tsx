@@ -1,5 +1,6 @@
+"use client";
+
 import React from "react";
-import { UIPlan, ComponentNode } from "@/types/plan";
 
 import { Button } from "@/components/system/Button";
 import { Card } from "@/components/system/Card";
@@ -10,11 +11,30 @@ import { Sidebar } from "@/components/system/Sidebar";
 import { Navbar } from "@/components/system/Navbar";
 import { Chart } from "@/components/system/Chart";
 
-/* =======================
-   PLAN → LIVE COMPONENTS
-======================= */
+import { ComponentNode } from "@/types/plan";
+
+/* ------------------------------------------------ */
+/* 🔐 Deterministic Component Whitelist Enforcement */
+/* ------------------------------------------------ */
+
+const allowedComponents = [
+  "Button",
+  "Card",
+  "Input",
+  "Table",
+  "Modal",
+  "Sidebar",
+  "Navbar",
+  "Chart",
+];
+
+/* ----------------------------- */
+/* 🧠 Recursive UI Renderer      */
+/* ----------------------------- */
 
 function renderComponent(node: ComponentNode): React.ReactNode {
+  if (!node || !allowedComponents.includes(node.type)) return null;
+
   const { type, props = {}, children = [] } = node;
 
   const renderedChildren = children.map((child, index) => (
@@ -25,7 +45,7 @@ function renderComponent(node: ComponentNode): React.ReactNode {
 
   switch (type) {
     case "Button":
-      return <Button {...props}>{props.children}</Button>;
+      return <Button {...props}>{props.label || "Button"}</Button>;
 
     case "Card":
       return <Card {...props}>{renderedChildren}</Card>;
@@ -34,14 +54,23 @@ function renderComponent(node: ComponentNode): React.ReactNode {
       return <Input {...props} />;
 
     case "Table":
-      return <Table {...props} />;
+      if (!props.columns || !props.data) {
+        return (
+          <div className="text-red-500 text-sm border border-red-300 p-2 rounded">
+            Invalid Table: missing columns or data
+          </div>
+        );
+      }
+      return <Table columns={props.columns} data={props.data} />;
 
     case "Modal":
       return (
         <Modal
-          isOpen={props.isOpen ?? true}
-          onClose={props.onClose ?? (() => {})}
-          {...props}
+          title={props.title || "Modal"}
+          isOpen={true}
+          onClose={() => {
+            alert("Modal closed (deterministic demo)");
+          }}
         >
           {renderedChildren}
         </Modal>
@@ -57,12 +86,12 @@ function renderComponent(node: ComponentNode): React.ReactNode {
       return (
         <Chart
           data={
-            props.data ?? [
+            props.data || [
               { label: "Jan", value: 40 },
-              { label: "Feb", value: 60 },
+              { label: "Feb", value: 70 },
+              { label: "Mar", value: 55 },
             ]
           }
-          {...props}
         />
       );
 
@@ -71,53 +100,57 @@ function renderComponent(node: ComponentNode): React.ReactNode {
   }
 }
 
-export function generateUI(plan: UIPlan): React.ReactNode {
+/* ----------------------------- */
+/* 🚀 Public UI Generator        */
+/* ----------------------------- */
+
+export function generateUI(plan: ComponentNode[]) {
+  if (!Array.isArray(plan)) return null;
+
   return (
     <>
-      {plan.components.map((component, index) => (
+      {plan.map((node, index) => (
         <React.Fragment key={index}>
-          {renderComponent(component)}
+          {renderComponent(node)}
         </React.Fragment>
       ))}
     </>
   );
 }
 
-/* =======================
-   PLAN → CODE STRING
-======================= */
+/* ------------------------------------------------ */
+/* 🧾 Deterministic Code String Generator           */
+/* ------------------------------------------------ */
 
-export function generateCodeString(plan: UIPlan): string {
-  function renderNode(node: any, indent = 4): string {
-    const space = " ".repeat(indent);
+function generateComponentCode(node: ComponentNode, indent = 2): string {
+  if (!node || !allowedComponents.includes(node.type)) return "";
 
-    const props =
-      node.props && Object.keys(node.props).length
-        ? " " +
-          Object.entries(node.props)
-            .map(([key, value]) => {
-              if (typeof value === "string") {
-                return `${key}="${value}"`;
-              }
-              return `${key}={${JSON.stringify(value)}}`;
-            })
-            .join(" ")
-        : "";
+  const space = " ".repeat(indent);
+  const { type, props = {}, children = [] } = node;
 
-    if (!node.children || node.children.length === 0) {
-      return `${space}<${node.type}${props} />`;
-    }
+  const propsString = Object.entries(props)
+    .map(([key, value]) => {
+      if (typeof value === "string") return `${key}="${value}"`;
+      return `${key}={${JSON.stringify(value)}}`;
+    })
+    .join(" ");
 
-    const children = node.children
-      .map((child: any) => renderNode(child, indent + 2))
-      .join("\n");
-
-    return `${space}<${node.type}${props}>
-${children}
-${space}</${node.type}>`;
+  if (!children || children.length === 0) {
+    return `${space}<${type} ${propsString} />\n`;
   }
 
-  return `import {
+  const childrenCode = children
+    .map((child) => generateComponentCode(child, indent + 2))
+    .join("");
+
+  return `${space}<${type} ${propsString}>\n${childrenCode}${space}</${type}>\n`;
+}
+
+export function generateCodeString(plan: ComponentNode[]): string {
+  if (!Array.isArray(plan)) return "";
+
+  const imports = `
+import {
   Button,
   Card,
   Input,
@@ -127,12 +160,17 @@ ${space}</${node.type}>`;
   Navbar,
   Chart
 } from "@/components/system";
+`;
+
+  const body = plan.map((node) => generateComponentCode(node)).join("");
+
+  return `${imports}
 
 export default function GeneratedUI() {
   return (
-<>
-${plan.components.map((c) => renderNode(c)).join("\n")}
-</>
+    <>
+${body}    </>
   );
-}`;
+}
+`;
 }

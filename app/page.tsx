@@ -8,9 +8,11 @@ import {
   getVersion,
 } from "@/store/versionStore";
 
+import { UIPlan } from "@/types/plan";
+
 export default function Home() {
   const [input, setInput] = useState("");
-  const [plan, setPlan] = useState<any>(null);
+  const [plan, setPlan] = useState<UIPlan | null>(null);
   const [code, setCode] = useState("");
   const [explanation, setExplanation] = useState("");
   const [versionCount, setVersionCount] = useState(0);
@@ -37,14 +39,17 @@ export default function Home() {
 
     setPlan(data.plan);
     setExplanation(data.explanation);
-    setCode(generateCodeString(data.plan));
+
+    // ✅ FIXED: pass components only
+    setCode(generateCodeString(data.plan.components));
   }
 
   function handleRollback(index: number) {
     const previous = getVersion(index);
+
     if (previous) {
       setPlan(previous);
-      setCode(generateCodeString(previous));
+      setCode(generateCodeString(previous.components));
     }
   }
 
@@ -109,7 +114,9 @@ export default function Home() {
 
         <div>
           <h2 className="font-semibold mb-2">Live Preview</h2>
-          {plan && generateUI(plan)}
+
+          {/* ✅ FIXED: pass components only */}
+          {plan && generateUI(plan.components)}
         </div>
       </div>
     </div>
