@@ -2,62 +2,75 @@
 
 import { useState } from "react";
 import { generateUI } from "@/agents/generator";
-import {
-  addVersion,
-  getVersions,
-  getVersion,
-} from "@/store/versionStore";
-
 import { UIPlan } from "@/types/plan";
+
+interface Version {
+  id: number;
+  plan: UIPlan;
+  explanation: string;
+}
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [plan, setPlan] = useState<UIPlan | null>(null);
   const [explanation, setExplanation] = useState("");
-  const [versionCount, setVersionCount] = useState(0);
+  const [versions, setVersions] = useState<Version[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   async function handleGenerate() {
+    if (!input.trim()) return;
+
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        input,
+        prompt: input,
         previousPlan: plan,
       }),
     });
 
     const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error);
-      return;
-    }
-
-    addVersion(data.plan);
-    setVersionCount(getVersions().length);
+    if (!data?.plan) return;
 
     setPlan(data.plan);
-    setExplanation(data.explanation);
+    setExplanation(data.explanation || "");
+
+    const hasModal = data.plan.components.some(
+      (c: any) => c.type === "Modal"
+    );
+    setIsModalOpen(hasModal);
+
+    const newVersion: Version = {
+      id: versions.length + 1,
+      plan: data.plan,
+      explanation: data.explanation,
+    };
+
+    setVersions((prev) => [...prev, newVersion]);
   }
 
-  function handleRollback(index: number) {
-    const previous = getVersion(index);
+  function handleRollback(id: number) {
+    const version = versions.find((v) => v.id === id);
+    if (!version) return;
 
-    if (previous) {
-      setPlan(previous);
-    }
+    setPlan(version.plan);
+    setExplanation(version.explanation);
+
+    const hasModal = version.plan.components.some(
+      (c: any) => c.type === "Modal"
+    );
+    setIsModalOpen(hasModal);
   }
 
   return (
     <div className="flex h-screen">
       {/* LEFT PANEL */}
-      <div className="w-1/3 border-r p-6 space-y-4">
-        <h2 className="text-lg font-semibold">AI Chat</h2>
+      <div className="w-1/3 border-r p-6">
+        <h2 className="text-xl font-semibold mb-4">AI Chat</h2>
 
         <textarea
-          className="w-full border p-2 rounded"
-          rows={4}
-          placeholder="Describe your UI..."
+          className="w-full border p-2 rounded mb-4"
+          rows={5}
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
@@ -70,37 +83,47 @@ export default function Home() {
         </button>
 
         <div className="mt-6">
-          <h3 className="font-semibold">Versions</h3>
-          <p>Total: {versionCount}</p>
+          <h3 className="font-semibold mb-2">Versions</h3>
 
-          <div className="space-y-2 mt-2">
-            {Array.from({ length: versionCount }).map((_, i) => (
+          {versions.length === 0 && (
+            <p className="text-sm text-gray-500">
+              No versions yet.
+            </p>
+          )}
+
+          {versions.map((v) => (
+            <div key={v.id} className="mb-2">
               <button
-                key={i}
-                onClick={() => handleRollback(i)}
-                className="block text-sm text-blue-600 underline"
+                onClick={() => handleRollback(v.id)}
+                className="text-blue-600 underline"
               >
-                Rollback to Version {i + 1}
+                Rollback to Version {v.id}
               </button>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* RIGHT PANEL */}
-      <div className="flex-1 p-6 overflow-auto space-y-6">
-        {explanation && (
-          <div className="bg-gray-100 p-4 rounded">
-            <h2 className="font-semibold mb-2">AI Explanation</h2>
-            <p>{explanation}</p>
-          </div>
-        )}
+      <div className="w-2/3 p-6 overflow-auto">
+        <h2 className="text-xl font-semibold mb-4">
+          AI Explanation
+        </h2>
 
-        <div>
-          <h2 className="font-semibold mb-2">Live Preview</h2>
-
-          {plan && generateUI(plan.components)}
+        <div className="bg-gray-100 p-4 rounded mb-6">
+          {explanation}
         </div>
+
+        <h2 className="text-xl font-semibold mb-4">
+          Live Preview
+        </h2>
+
+        {plan &&
+          generateUI(
+            plan.components,
+            isModalOpen,
+            () => setIsModalOpen(false)
+          )}
       </div>
     </div>
   );
